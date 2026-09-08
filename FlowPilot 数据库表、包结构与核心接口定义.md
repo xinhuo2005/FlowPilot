@@ -613,7 +613,7 @@ public class ExecutionContext {
 
     private String executionId;
 
-    private String userId;
+    private String routingKey;
 
     private Map<String, Object> variables;
 
@@ -627,7 +627,7 @@ public class OrderExecutionContext {
 
     private String executionId;
 
-    private String userId;
+    private String routingKey;
 
     private Long orderId;
 

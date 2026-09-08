@@ -19,6 +19,7 @@
 
     <properties>
         <java.version>21</java.version>
+        <liteflow.version>2.16.1</liteflow.version>
     </properties>
 
     <dependencies>
@@ -30,6 +31,12 @@
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>com.yomahub</groupId>
+            <artifactId>liteflow-spring-boot-starter</artifactId>
+            <version>${liteflow.version}</version>
         </dependency>
 
         <dependency>
