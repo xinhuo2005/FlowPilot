@@ -1,0 +1,21 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: flowpilot-mysql
+    environment:
+      MYSQL_DATABASE: flowpilot
+      MYSQL_ROOT_PASSWORD: flowpilot
+      TZ: Asia/Shanghai
+    ports:
+      - "3306:3306"
+    volumes:
+      - flowpilot-mysql-data:/var/lib/mysql
+      - ./src/main/resources/db/schema.sql:/docker-entrypoint-initdb.d/001-schema.sql:ro
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-pflowpilot"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  flowpilot-mysql-data:
