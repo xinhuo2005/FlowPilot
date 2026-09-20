@@ -8,6 +8,8 @@ public interface RuleDefinitionRepository {
 
     Optional<RuleDefinition> findByCode(String ruleCode);
 
+    Optional<RuleDefinition> findByCodeForUpdate(String ruleCode);
+
     RuleDefinition save(RuleDefinition definition);
 
     /**

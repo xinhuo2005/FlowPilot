@@ -6,7 +6,9 @@ import com.github.benmanes.caffeine.cache.Caffeine;
 
 import java.time.Duration;
 import java.util.Objects;
+import org.springframework.stereotype.Component;
 
+@Component
 public final class CaffeineRuleCache implements RuleCache {
 
     private static final long DEFAULT_MAXIMUM_SIZE = 1_000;

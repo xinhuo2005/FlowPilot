@@ -1,6 +1,7 @@
 package com.flowpilot.engine;
 
 import com.flowpilot.domain.rule.model.RuleSnapshot;
+import com.flowpilot.domain.rule.service.RuleLoader;
 import com.flowpilot.exception.RuleLoadException;
 import com.yomahub.liteflow.builder.el.LiteFlowChainELBuilder;
 import com.yomahub.liteflow.flow.FlowBus;
@@ -12,10 +13,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 @Component
-public class LiteFlowRuleLoader {
+public class LiteFlowRuleLoader implements RuleLoader {
 
     private final ConcurrentMap<String, String> loadedChecksums = new ConcurrentHashMap<>();
 
+    @Override
     public String load(RuleSnapshot snapshot) {
         Objects.requireNonNull(snapshot, "snapshot must not be null");
         String chainId = RuleChainId.from(snapshot);

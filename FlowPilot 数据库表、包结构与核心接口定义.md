@@ -1024,6 +1024,10 @@ public interface RuleDefinitionRepository {
             String ruleCode
     );
 
+    Optional<RuleDefinition> findByCodeForUpdate(
+            String ruleCode
+    );
+
     RuleDefinition save(
             RuleDefinition definition
     );
@@ -1058,6 +1062,9 @@ AND current_version = #{expectedVersion}
 ```text
 CAS
 ```
+
+`findByCodeForUpdate` 用于生命周期短事务开始时锁定规则行，使同一规则的发布、回滚和
+灰度迁移串行执行；LiteFlow 校验和预加载必须在获取该锁之前完成。
 
 首次发布时 `current_version` 为 `NULL`，不能生成 `current_version = NULL`。Repository
 实现需要把首次发布作为明确分支，执行：
@@ -1116,9 +1123,25 @@ public interface GrayPolicyRepository {
             GrayPolicy policy
     );
 
-    void disable(Long ruleId);
+    boolean activate(GrayPolicy policy);
+
+    boolean updatePercentage(
+            Long ruleId,
+            Integer expectedPercentage,
+            Integer newPercentage
+    );
+
+    boolean disable(
+            Long ruleId,
+            Integer baseVersion,
+            Integer grayVersion
+    );
 }
 ```
+
+灰度开启、比例调整与停用都使用预期状态或预期值作为 CAS 条件，并检查
+`affectedRows == 1`。同一条规则的生命周期事务先锁定 `rule_definition` 行，串行化发布、
+回滚和灰度状态迁移。
 
 ---
 

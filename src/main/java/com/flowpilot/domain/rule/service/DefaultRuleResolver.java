@@ -16,7 +16,9 @@ import com.flowpilot.exception.RuleNotFoundException;
 import com.flowpilot.exception.RuleVersionNotFoundException;
 
 import java.util.Objects;
+import org.springframework.stereotype.Service;
 
+@Service
 public final class DefaultRuleResolver implements RuleResolver {
 
     private final RuleDefinitionRepository ruleDefinitionRepository;

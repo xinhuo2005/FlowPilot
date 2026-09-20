@@ -1,5 +1,8 @@
 package com.flowpilot.domain.gray.service;
 
+import org.springframework.stereotype.Component;
+
+@Component
 public final class HashGrayRouter implements GrayRouter {
 
     private static final int BUCKET_COUNT = 100;

@@ -10,5 +10,9 @@ public interface GrayPolicyRepository {
 
     GrayPolicy save(GrayPolicy policy);
 
-    void disable(Long ruleId);
+    boolean activate(GrayPolicy policy);
+
+    boolean updatePercentage(Long ruleId, Integer expectedPercentage, Integer newPercentage);
+
+    boolean disable(Long ruleId, Integer baseVersion, Integer grayVersion);
 }

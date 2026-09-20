@@ -1,3 +1,11 @@
 spring:
   application:
     name: flowpilot
+  datasource:
+    url: ${FLOWPILOT_DB_URL:jdbc:mysql://localhost:3306/flowpilot?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai}
+    username: ${FLOWPILOT_DB_USERNAME:root}
+    password: ${FLOWPILOT_DB_PASSWORD:}
+  sql:
+    init:
+      mode: never
+      schema-locations: classpath:db/schema.sql
