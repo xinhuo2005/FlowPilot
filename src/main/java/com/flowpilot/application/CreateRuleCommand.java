@@ -1,6 +1,12 @@
 package com.flowpilot.application;
 
-public record CreateRuleCommand(String ruleCode, String ruleName, String description) {
+import jakarta.validation.constraints.NotBlank;
+
+public record CreateRuleCommand(
+        @NotBlank String ruleCode,
+        @NotBlank String ruleName,
+        String description
+) {
 
     public CreateRuleCommand {
         ruleCode = requireText(ruleCode, "ruleCode");

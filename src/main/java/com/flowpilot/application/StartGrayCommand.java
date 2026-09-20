@@ -1,6 +1,13 @@
 package com.flowpilot.application;
 
-public record StartGrayCommand(Integer grayVersion, Integer percentage) {
+import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotNull;
+
+public record StartGrayCommand(
+        @NotNull @Min(1) Integer grayVersion,
+        @NotNull @Min(1) @Max(99) Integer percentage
+) {
 
     public StartGrayCommand {
         if (grayVersion == null || grayVersion < 1) {

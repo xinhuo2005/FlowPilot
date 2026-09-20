@@ -1,6 +1,8 @@
 package com.flowpilot.application;
 
-public record CreateRuleVersionCommand(String ruleContent, String createdBy) {
+import jakarta.validation.constraints.NotBlank;
+
+public record CreateRuleVersionCommand(@NotBlank String ruleContent, String createdBy) {
 
     public CreateRuleVersionCommand(String ruleContent) {
         this(ruleContent, null);

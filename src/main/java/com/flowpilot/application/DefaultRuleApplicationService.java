@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Comparator;
+import java.util.List;
 import java.util.Objects;
 
 @Service
@@ -63,6 +64,27 @@ public class DefaultRuleApplicationService implements RuleApplicationService {
                 RuleVersionStatus.DRAFT, ChecksumUtils.sha256(command.ruleContent()),
                 command.createdBy(), null, null));
         return saved.version();
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public RuleDetailResponse getRule(String ruleCode) {
+        requireText(ruleCode, "ruleCode");
+        RuleDefinition definition = definitionRepository.findByCode(ruleCode)
+                .orElseThrow(() -> new RuleNotFoundException(ruleCode));
+        return RuleDetailResponse.from(definition);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<RuleVersionResponse> listVersions(String ruleCode) {
+        requireText(ruleCode, "ruleCode");
+        RuleDefinition definition = definitionRepository.findByCode(ruleCode)
+                .orElseThrow(() -> new RuleNotFoundException(ruleCode));
+        return versionRepository.findAll(definition.id()).stream()
+                .sorted(Comparator.comparing(RuleVersion::version))
+                .map(RuleVersionResponse::from)
+                .toList();
     }
 
     private static void requireText(String value, String fieldName) {
