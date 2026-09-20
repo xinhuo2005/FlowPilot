@@ -6,7 +6,7 @@ import java.util.List;
 
 public interface NodeExecutionRepository {
 
-    void create(NodeExecution execution);
+    Long create(NodeExecution execution);
 
     void markSuccess(Long nodeExecutionId, long durationMs);
 

@@ -2,6 +2,9 @@ package com.flowpilot.application;
 
 import com.flowpilot.domain.execution.model.ExecutionContext;
 import com.flowpilot.domain.execution.model.ExecutionResult;
+import com.flowpilot.domain.execution.repository.FlowExecutionRepository;
+import com.flowpilot.domain.execution.repository.NodeExecutionRepository;
+import com.flowpilot.domain.execution.service.ExecutionTraceService;
 import com.flowpilot.domain.rule.model.RuleSnapshot;
 import com.flowpilot.domain.rule.service.RuleResolver;
 import com.flowpilot.engine.RuleEngine;
@@ -38,6 +41,15 @@ class PhaseSixSmoothSwitchIntegrationTest {
     @Autowired
     private RuleEngine actualRuleEngine;
 
+    @Autowired
+    private ExecutionTraceService traceService;
+
+    @Autowired
+    private FlowExecutionRepository flowExecutionRepository;
+
+    @Autowired
+    private NodeExecutionRepository nodeExecutionRepository;
+
     @Test
     void inFlightRequestMustKeepVersionOneWhileNewRequestUsesVersionTwo() throws Exception {
         String ruleCode = "SMOOTH_SWITCH_" + SEQUENCE.incrementAndGet();
@@ -53,7 +65,9 @@ class PhaseSixSmoothSwitchIntegrationTest {
 
         BlockingRuleEngine blockingEngine = new BlockingRuleEngine(actualRuleEngine, "request-v1");
         FlowExecutionApplicationService executionService =
-                new DefaultFlowExecutionApplicationService(ruleResolver, blockingEngine);
+                new DefaultFlowExecutionApplicationService(
+                        ruleResolver, blockingEngine, traceService,
+                        flowExecutionRepository, nodeExecutionRepository);
 
         try (ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor()) {
             Future<FlowExecuteResponse> t1 = executor.submit(() -> executionService.execute(

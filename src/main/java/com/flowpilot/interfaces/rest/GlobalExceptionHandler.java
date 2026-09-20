@@ -1,6 +1,7 @@
 package com.flowpilot.interfaces.rest;
 
 import com.flowpilot.exception.IllegalRuleStateException;
+import com.flowpilot.exception.ExecutionNotFoundException;
 import com.flowpilot.exception.RuleExecutionException;
 import com.flowpilot.exception.RuleLoadException;
 import com.flowpilot.exception.RuleNotFoundException;
@@ -19,6 +20,13 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({RuleNotFoundException.class, RuleVersionNotFoundException.class})
     public ResponseEntity<ApiErrorResponse> handleNotFound(RuntimeException exception) {
         return response(HttpStatus.NOT_FOUND, "RULE_NOT_FOUND", exception.getMessage(), null);
+    }
+
+    @ExceptionHandler(ExecutionNotFoundException.class)
+    public ResponseEntity<ApiErrorResponse> handleExecutionNotFound(
+            ExecutionNotFoundException exception
+    ) {
+        return response(HttpStatus.NOT_FOUND, "EXECUTION_NOT_FOUND", exception.getMessage(), null);
     }
 
     @ExceptionHandler(IllegalRuleStateException.class)
