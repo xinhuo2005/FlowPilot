@@ -9,3 +9,6 @@ spring:
     init:
       mode: never
       schema-locations: classpath:db/schema.sql
+  flyway:
+    enabled: true
+    locations: classpath:db/migration

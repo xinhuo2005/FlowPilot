@@ -47,7 +47,9 @@ executionId → resolve once → fixed RuleSnapshot → versioned Chain → comp
 - Spring JDBC
 - MySQL 8 / H2（测试）
 - Caffeine
-- JUnit 5、AssertJ、MockMvc
+- Flyway（生产 schema 迁移）
+- JUnit 5、AssertJ、MockMvc、Testcontainers（真实 MySQL 验证）
+- springdoc OpenAPI
 
 ## 快速启动
 
@@ -59,7 +61,8 @@ executionId → resolve once → fixed RuleSnapshot → versioned Chain → comp
 docker compose up -d
 ```
 
-首次创建容器时，`src/main/resources/db/schema.sql` 会自动初始化表结构。
+应用启动时由 Flyway 执行 `src/main/resources/db/migration/V1__init_schema.sql` 创建或升级表结构。
+`src/main/resources/db/schema.sql` 仅用于 H2 测试初始化。
 
 ### 2. 配置数据库并启动应用
 
@@ -140,6 +143,10 @@ curl http://localhost:8080/api/executions/{executionId}
 
 当前测试覆盖：领域约束、缓存、稳定哈希路由、LiteFlow 串行/并行执行、发布与回滚、灰度生命周期、
 并发发布、HTTP 完整链路、在途请求平滑切换、成功与失败执行追踪。
+
+工程化验证还包括：OpenAPI 文档可访问性、Flyway 迁移脚本，以及基于 Testcontainers 的 MySQL
+迁移验证。没有安装 Docker 时，MySQL 容器测试会自动跳过；在 CI（`.github/workflows/ci.yml`）中会
+使用带 Docker 的运行环境执行完整校验。启动应用后可访问 `/swagger-ui.html` 或 `/v3/api-docs`。
 
 ## 关键设计取舍
 

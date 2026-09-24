@@ -8,3 +8,5 @@ spring:
     init:
       mode: always
       schema-locations: classpath:db/schema.sql
+  flyway:
+    enabled: false
