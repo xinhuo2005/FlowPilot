@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -64,18 +65,24 @@ public class RuleController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void publish(
             @PathVariable String ruleCode,
-            @PathVariable @Min(1) int version
+            @PathVariable @Min(1) int version,
+            @RequestHeader(value = "X-Operation-Id", required = false) String operationId,
+            @RequestHeader(value = "X-Operator", defaultValue = "anonymous") String operator,
+            @RequestHeader(value = "X-Roles", defaultValue = "") String roles
     ) {
-        publishService.publish(ruleCode, version);
+        publishService.publish(ruleCode, version, operationId, operator, roles);
     }
 
     @PostMapping("/{ruleCode}/rollback")
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void rollback(
             @PathVariable String ruleCode,
-            @Valid @RequestBody RollbackRequest request
+            @Valid @RequestBody RollbackRequest request,
+            @RequestHeader(value = "X-Operation-Id", required = false) String operationId,
+            @RequestHeader(value = "X-Operator", defaultValue = "anonymous") String operator,
+            @RequestHeader(value = "X-Roles", defaultValue = "") String roles
     ) {
-        publishService.rollback(ruleCode, request.targetVersion());
+        publishService.rollback(ruleCode, request.targetVersion(), operationId, operator, roles);
     }
 
     public record CreatedRuleResponse(Long id) {

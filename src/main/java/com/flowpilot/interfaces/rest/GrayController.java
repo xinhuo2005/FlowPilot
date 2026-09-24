@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -32,30 +33,46 @@ public class GrayController {
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void startGray(
             @PathVariable String ruleCode,
-            @Valid @RequestBody StartGrayCommand command
+            @Valid @RequestBody StartGrayCommand command,
+            @RequestHeader(value = "X-Operation-Id", required = false) String operationId,
+            @RequestHeader(value = "X-Operator", defaultValue = "anonymous") String operator,
+            @RequestHeader(value = "X-Roles", defaultValue = "") String roles
     ) {
-        grayService.startGray(ruleCode, command);
+        grayService.startGray(ruleCode, command, operationId, operator, roles);
     }
 
     @PutMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
     public void updatePercentage(
             @PathVariable String ruleCode,
-            @Valid @RequestBody UpdatePercentageRequest request
+            @Valid @RequestBody UpdatePercentageRequest request,
+            @RequestHeader(value = "X-Operation-Id", required = false) String operationId,
+            @RequestHeader(value = "X-Operator", defaultValue = "anonymous") String operator,
+            @RequestHeader(value = "X-Roles", defaultValue = "") String roles
     ) {
-        grayService.updatePercentage(ruleCode, request.percentage());
+        grayService.updatePercentage(ruleCode, request.percentage(), operationId, operator, roles);
     }
 
     @DeleteMapping
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void stopGray(@PathVariable String ruleCode) {
-        grayService.stopGray(ruleCode);
+    public void stopGray(
+            @PathVariable String ruleCode,
+            @RequestHeader(value = "X-Operation-Id", required = false) String operationId,
+            @RequestHeader(value = "X-Operator", defaultValue = "anonymous") String operator,
+            @RequestHeader(value = "X-Roles", defaultValue = "") String roles
+    ) {
+        grayService.stopGray(ruleCode, operationId, operator, roles);
     }
 
     @PostMapping("/promote")
     @ResponseStatus(HttpStatus.NO_CONTENT)
-    public void promote(@PathVariable String ruleCode) {
-        grayService.promote(ruleCode);
+    public void promote(
+            @PathVariable String ruleCode,
+            @RequestHeader(value = "X-Operation-Id", required = false) String operationId,
+            @RequestHeader(value = "X-Operator", defaultValue = "anonymous") String operator,
+            @RequestHeader(value = "X-Roles", defaultValue = "") String roles
+    ) {
+        grayService.promote(ruleCode, operationId, operator, roles);
     }
 
     @GetMapping

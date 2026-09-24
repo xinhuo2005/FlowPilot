@@ -14,6 +14,8 @@ FlowPilot 是一个基于 Java 21、Spring Boot、LiteFlow 和 MySQL 的动态�
 - 完整生命周期：支持首次发布、升级发布、回滚、开启灰度、调整比例、停止灰度和灰度转正。
 - 执行追踪：记录执行版本、状态、耗时、错误，以及每个节点的状态、耗时和异常。
 - 并发保障：自动化测试覆盖并发发布和平滑切换，在途 V1 与新请求 V2 不会串版本。
+- 操作可审计：发布和灰度变更记录操作者、操作类型、状态、请求摘要与完成时间。
+- 写操作幂等：支持 `X-Operation-Id`，重复提交同一操作不会重复触发状态迁移。
 
 ## 架构
 
@@ -135,6 +137,10 @@ curl http://localhost:8080/api/executions/{executionId}
 
 活动灰度比例只接受 `1~99`。`0` 使用停止灰度接口，`100` 使用灰度转正接口，避免状态语义含糊。
 
+发布、回滚和灰度变更支持以下请求头：`X-Operation-Id`（幂等键，可选）、`X-Operator`（操作者）和
+`X-Roles`（逗号分隔角色）。默认关闭角色校验以兼容本地调用；生产环境设置
+`FLOWPILOT_SECURITY_REQUIRE_ROLE=true` 后，需要 `RELEASE_MANAGER` 或 `RULE_ADMIN` 角色。
+
 ## 测试
 
 ```powershell
@@ -147,6 +153,9 @@ curl http://localhost:8080/api/executions/{executionId}
 工程化验证还包括：OpenAPI 文档可访问性、Flyway 迁移脚本，以及基于 Testcontainers 的 MySQL
 迁移验证。没有安装 Docker 时，MySQL 容器测试会自动跳过；在 CI（`.github/workflows/ci.yml`）中会
 使用带 Docker 的运行环境执行完整校验。启动应用后可访问 `/swagger-ui.html` 或 `/v3/api-docs`。
+
+Phase 9 额外验证操作 ID 重放、请求摘要冲突、失败审计和角色边界。审计数据保存在
+`flow_operation_audit`，可按规则和状态建立运维查询。
 
 ## 关键设计取舍
 
