@@ -17,6 +17,7 @@ FlowPilot 是一个基于 Java 21、Spring Boot、LiteFlow 和 MySQL 的动态�
 - 操作可审计：发布和灰度变更记录操作者、操作类型、状态、请求摘要与完成时间。
 - 写操作幂等：支持 `X-Operation-Id`，重复提交同一操作不会重复触发状态迁移。
 - 变更 Outbox：版本和灰度迁移在同一事务写入可重试事件，处理器通过数据库抢占避免多实例重复消费。
+- 安全执行模式：支持 `LIVE`、`DRY_RUN` 和 `SHADOW`，可在不产生真实副作用的情况下预演或比较候选版本。
 
 ## 架构
 
@@ -165,6 +166,21 @@ Phase 10 的 `rule_change_outbox` 保存规则发布、回滚和灰度变更事�
 Phase 11 提供 Micrometer 指标（执行总量、耗时、灰度保护动作）、`X-Trace-Id` 请求链路标识和结构化
 关键日志。灰度版本执行失败达到 `FLOWPILOT_GRAY_FAILURE_THRESHOLD`（默认 5）时，系统会自动停止该灰度
 策略并记录保护指标；Actuator 健康检查、指标和 Prometheus 端点按配置暴露。
+
+执行接口请求体可以增加 `mode` 和 `shadowVersion`：
+
+```json
+{
+  "routingKey": "customer-10001",
+  "variables": {"userValid": true},
+  "mode": "SHADOW",
+  "shadowVersion": 2
+}
+```
+
+`DRY_RUN` 会把写入类节点转换成预演字段（例如 `orderWouldBeCreated`），`SHADOW` 会返回主版本和候选
+版本的 executionId、结果及 `matched` 对比值。执行追踪默认保留 30 天，可通过
+`FLOWPILOT_EXECUTION_RETENTION_DAYS` 和 `FLOWPILOT_EXECUTION_RETENTION_BATCH_SIZE` 调整清理策略。
 
 ## 关键设计取舍
 

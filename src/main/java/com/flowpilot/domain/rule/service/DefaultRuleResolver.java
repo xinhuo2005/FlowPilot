@@ -74,6 +74,30 @@ public final class DefaultRuleResolver implements RuleResolver {
         return snapshot;
     }
 
+    @Override
+    public RuleSnapshot resolveVersion(String ruleCode, String routingKey, int version) {
+        requireText(ruleCode, "ruleCode");
+        requireText(routingKey, "routingKey");
+        if (version < 1) {
+            throw new IllegalArgumentException("version must be positive");
+        }
+        RuleDefinition definition = ruleDefinitionRepository.findByCode(ruleCode)
+                .orElseThrow(() -> new RuleNotFoundException(ruleCode));
+        ensureExecutable(definition);
+        RuleSnapshot cachedSnapshot = ruleCache.get(ruleCode, version);
+        if (cachedSnapshot != null) {
+            return cachedSnapshot;
+        }
+        RuleVersion ruleVersion = ruleVersionRepository.find(definition.id(), version)
+                .orElseThrow(() -> new RuleVersionNotFoundException(ruleCode, version));
+        ensurePublished(ruleCode, ruleVersion);
+        RuleSnapshot snapshot = new RuleSnapshot(
+                definition.id(), definition.ruleCode(), ruleVersion.version(),
+                ruleVersion.ruleContent(), ruleVersion.checksum());
+        ruleCache.put(snapshot);
+        return snapshot;
+    }
+
     private int routeGray(RuleDefinition definition, GrayPolicy policy, String routingKey) {
         if (!definition.currentVersion().equals(policy.baseVersion())) {
             throw new IllegalRuleStateException(

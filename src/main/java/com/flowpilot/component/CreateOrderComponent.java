@@ -13,6 +13,7 @@ public class CreateOrderComponent extends AbstractDemoComponent {
 
     @Override
     protected void apply(ExecutionContext context) {
-        context.putVariable("orderCreated", true);
+        context.putVariable(
+                context.sideEffectsAllowed() ? "orderCreated" : "orderWouldBeCreated", true);
     }
 }

@@ -13,6 +13,7 @@ public class NotifyComponent extends AbstractDemoComponent {
 
     @Override
     protected void apply(ExecutionContext context) {
-        context.putVariable("notified", true);
+        context.putVariable(
+                context.sideEffectsAllowed() ? "notified" : "notificationWouldBeSent", true);
     }
 }

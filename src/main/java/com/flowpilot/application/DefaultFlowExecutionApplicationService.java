@@ -1,6 +1,7 @@
 package com.flowpilot.application;
 
 import com.flowpilot.domain.execution.model.ExecutionContext;
+import com.flowpilot.domain.execution.model.ExecutionMode;
 import com.flowpilot.domain.execution.model.ExecutionResult;
 import com.flowpilot.domain.execution.repository.FlowExecutionRepository;
 import com.flowpilot.domain.execution.repository.NodeExecutionRepository;
@@ -18,6 +19,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Map;
+import java.util.LinkedHashMap;
 import java.util.Objects;
 import java.util.UUID;
 
@@ -72,13 +74,46 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
         requireText(ruleCode, "ruleCode");
         Objects.requireNonNull(command, "command must not be null");
 
+        RuleSnapshot snapshot = ruleResolver.resolve(ruleCode, command.routingKey());
+        if (command.mode() == ExecutionMode.SHADOW) {
+            ExecutionResult primary = executeSnapshot(snapshot, command, ExecutionMode.DRY_RUN, true);
+            RuleSnapshot shadowSnapshot = ruleResolver.resolveVersion(
+                    ruleCode, command.routingKey(), command.shadowVersion());
+            ExecutionResult shadow = executeSnapshot(
+                    shadowSnapshot, command, ExecutionMode.DRY_RUN, true);
+            Map<String, Object> comparison = new LinkedHashMap<>();
+            comparison.put("matched", Objects.equals(primary.result(), shadow.result()));
+            comparison.put("primaryExecutionId", primary.executionId());
+            comparison.put("primaryVersion", primary.version());
+            comparison.put("primaryResult", primary.result());
+            comparison.put("shadowExecutionId", shadow.executionId());
+            comparison.put("shadowVersion", shadow.version());
+            comparison.put("shadowSuccess", shadow.success());
+            comparison.put("shadowResult", shadow.result());
+            return new FlowExecuteResponse(
+                    primary.executionId(), primary.ruleCode(), primary.version(),
+                    primary.success(), comparison);
+        }
+
+        ExecutionResult result = executeSnapshot(snapshot, command, command.mode(), false);
+        return new FlowExecuteResponse(
+                result.executionId(), result.ruleCode(), result.version(),
+                result.success(), result.result());
+    }
+
+    private ExecutionResult executeSnapshot(
+            RuleSnapshot snapshot,
+            FlowExecuteCommand command,
+            ExecutionMode mode,
+            boolean swallowFailure
+    ) {
         String executionId = UUID.randomUUID().toString();
         Timer.Sample metricsTimer = metrics == null ? null : metrics.startExecutionTimer();
-        RuleSnapshot snapshot = ruleResolver.resolve(ruleCode, command.routingKey());
         ExecutionContext context = new ExecutionContext(
                 executionId,
                 command.routingKey(),
-                command.variables() == null ? Map.of() : command.variables());
+                command.variables() == null ? Map.of() : command.variables(),
+                mode);
         long startedAt = System.nanoTime();
         traceService.startExecution(executionId, snapshot, command.routingKey());
         ExecutionResult result;
@@ -90,11 +125,16 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
             if (metrics != null) {
                 metrics.recordExecution(metricsTimer, snapshot.ruleCode(), snapshot.version(), "FAILED", durationMs);
             }
-            if (grayProtectionService != null) {
+            if (grayProtectionService != null && mode == ExecutionMode.LIVE) {
                 grayProtectionService.recordFailure(snapshot.ruleCode(), snapshot.version());
             }
             log.warn("flow_execution_failed executionId={} ruleCode={} ruleVersion={} durationMs={} reason={}",
                     executionId, snapshot.ruleCode(), snapshot.version(), durationMs, throwable.getMessage());
+            if (swallowFailure) {
+                return new ExecutionResult(
+                        executionId, snapshot.ruleCode(), snapshot.version(), false,
+                        Map.of("error", rootMessage(throwable)));
+            }
             throw throwable;
         }
         long durationMs = elapsedMillis(startedAt);
@@ -104,9 +144,7 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
         }
         log.info("flow_execution_succeeded executionId={} ruleCode={} ruleVersion={} durationMs={}",
                 executionId, snapshot.ruleCode(), snapshot.version(), durationMs);
-        return new FlowExecuteResponse(
-                result.executionId(), result.ruleCode(), result.version(),
-                result.success(), result.result());
+        return result;
     }
 
     @Override
@@ -122,6 +160,16 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
 
     private static long elapsedMillis(long startedAt) {
         return Math.max(0L, (System.nanoTime() - startedAt) / 1_000_000L);
+    }
+
+    private static String rootMessage(Throwable throwable) {
+        Throwable root = throwable;
+        while (root.getCause() != null && root.getCause() != root) {
+            root = root.getCause();
+        }
+        return root.getMessage() == null || root.getMessage().isBlank()
+                ? root.getClass().getSimpleName()
+                : root.getMessage();
     }
 
     private static void requireText(String value, String fieldName) {

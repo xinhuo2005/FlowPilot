@@ -10,12 +10,23 @@ public final class ExecutionContext {
 
     private final String executionId;
     private final String routingKey;
+    private final ExecutionMode mode;
     private final Map<String, Object> variables;
     private final List<String> executedNodes = Collections.synchronizedList(new ArrayList<>());
 
     public ExecutionContext(String executionId, String routingKey, Map<String, Object> variables) {
+        this(executionId, routingKey, variables, ExecutionMode.LIVE);
+    }
+
+    public ExecutionContext(
+            String executionId,
+            String routingKey,
+            Map<String, Object> variables,
+            ExecutionMode mode
+    ) {
         this.executionId = requireText(executionId, "executionId");
         this.routingKey = requireText(routingKey, "routingKey");
+        this.mode = mode == null ? ExecutionMode.LIVE : mode;
         this.variables = Collections.synchronizedMap(
                 new HashMap<>(variables == null ? Map.of() : variables));
     }
@@ -26,6 +37,14 @@ public final class ExecutionContext {
 
     public String routingKey() {
         return routingKey;
+    }
+
+    public ExecutionMode mode() {
+        return mode;
+    }
+
+    public boolean sideEffectsAllowed() {
+        return mode == ExecutionMode.LIVE;
     }
 
     public Object getVariable(String name) {

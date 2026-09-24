@@ -19,6 +19,9 @@ flowpilot:
   gray:
     protection:
       failure-threshold: ${FLOWPILOT_GRAY_FAILURE_THRESHOLD:5}
+  execution:
+    retention-days: ${FLOWPILOT_EXECUTION_RETENTION_DAYS:30}
+    retention-batch-size: ${FLOWPILOT_EXECUTION_RETENTION_BATCH_SIZE:1000}
 
 management:
   endpoints:

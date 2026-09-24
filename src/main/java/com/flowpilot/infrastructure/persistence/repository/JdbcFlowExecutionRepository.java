@@ -8,6 +8,8 @@ import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.util.Optional;
+import java.time.LocalDateTime;
+import java.util.List;
 
 @Repository
 public class JdbcFlowExecutionRepository implements FlowExecutionRepository {
@@ -74,6 +76,27 @@ public class JdbcFlowExecutionRepository implements FlowExecutionRepository {
                         """, ROW_MAPPER, executionId)
                 .stream()
                 .findFirst();
+    }
+
+    @Override
+    public int deleteOlderThan(LocalDateTime cutoff, int limit) {
+        int safeLimit = Math.max(1, Math.min(limit, 5_000));
+        List<String> executionIds = jdbcTemplate.query(
+                """
+                SELECT execution_id
+                FROM flow_execution
+                WHERE created_at < ?
+                ORDER BY id
+                LIMIT ?
+                """,
+                (resultSet, rowNum) -> resultSet.getString("execution_id"),
+                cutoff, safeLimit);
+        int deleted = 0;
+        for (String executionId : executionIds) {
+            jdbcTemplate.update("DELETE FROM flow_execution_node WHERE execution_id = ?", executionId);
+            deleted += jdbcTemplate.update("DELETE FROM flow_execution WHERE execution_id = ?", executionId);
+        }
+        return deleted;
     }
 
     private static void requireSingleUpdate(int affectedRows, String executionId) {
