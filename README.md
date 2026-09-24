@@ -162,6 +162,10 @@ Phase 10 的 `rule_change_outbox` 保存规则发布、回滚和灰度变更事�
 `RuleChangeOutboxDispatcher` 以 `PENDING → PROCESSING → PROCESSED` 状态推进，处理失败会增加重试次数
 并延迟再次可见；当前内置处理器负责本地缓存失效，跨实例广播可在该处理器后接入消息系统。
 
+Phase 11 提供 Micrometer 指标（执行总量、耗时、灰度保护动作）、`X-Trace-Id` 请求链路标识和结构化
+关键日志。灰度版本执行失败达到 `FLOWPILOT_GRAY_FAILURE_THRESHOLD`（默认 5）时，系统会自动停止该灰度
+策略并记录保护指标；Actuator 健康检查、指标和 Prometheus 端点按配置暴露。
+
 ## 关键设计取舍
 
 1. 发布切换的是数据库中的稳定版本指针，不修改已生成的执行快照。

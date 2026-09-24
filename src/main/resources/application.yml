@@ -16,3 +16,19 @@ spring:
 flowpilot:
   security:
     require-role: ${FLOWPILOT_SECURITY_REQUIRE_ROLE:false}
+  gray:
+    protection:
+      failure-threshold: ${FLOWPILOT_GRAY_FAILURE_THRESHOLD:5}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include:
+          - health
+          - info
+          - metrics
+          - prometheus
+  endpoint:
+    health:
+      show-details: when_authorized
