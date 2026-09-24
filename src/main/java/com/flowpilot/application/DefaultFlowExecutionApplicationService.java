@@ -12,6 +12,7 @@ import com.flowpilot.engine.RuleEngine;
 import com.flowpilot.exception.ExecutionNotFoundException;
 import com.flowpilot.observability.FlowPilotMetrics;
 import com.flowpilot.observability.GrayProtectionService;
+import com.flowpilot.observability.ExecutionAdmissionController;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import io.micrometer.core.instrument.Timer;
@@ -35,6 +36,7 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
     private final NodeExecutionRepository nodeExecutionRepository;
     private final FlowPilotMetrics metrics;
     private final GrayProtectionService grayProtectionService;
+    private final ExecutionAdmissionController admissionController;
 
     @Autowired
     public DefaultFlowExecutionApplicationService(
@@ -44,7 +46,8 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
             FlowExecutionRepository flowExecutionRepository,
             NodeExecutionRepository nodeExecutionRepository,
             FlowPilotMetrics metrics,
-            GrayProtectionService grayProtectionService
+            GrayProtectionService grayProtectionService,
+            ExecutionAdmissionController admissionController
     ) {
         this.ruleResolver = ruleResolver;
         this.ruleEngine = ruleEngine;
@@ -53,6 +56,7 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
         this.nodeExecutionRepository = nodeExecutionRepository;
         this.metrics = metrics;
         this.grayProtectionService = grayProtectionService;
+        this.admissionController = admissionController;
     }
 
     /**
@@ -66,11 +70,24 @@ public class DefaultFlowExecutionApplicationService implements FlowExecutionAppl
             NodeExecutionRepository nodeExecutionRepository
     ) {
         this(ruleResolver, ruleEngine, traceService, flowExecutionRepository,
-                nodeExecutionRepository, null, null);
+                nodeExecutionRepository, null, null, null);
     }
 
     @Override
     public FlowExecuteResponse execute(String ruleCode, FlowExecuteCommand command) {
+        if (admissionController != null) {
+            admissionController.acquire();
+        }
+        try {
+            return executeWithAdmission(ruleCode, command);
+        } finally {
+            if (admissionController != null) {
+                admissionController.release();
+            }
+        }
+    }
+
+    private FlowExecuteResponse executeWithAdmission(String ruleCode, FlowExecuteCommand command) {
         requireText(ruleCode, "ruleCode");
         Objects.requireNonNull(command, "command must not be null");
 

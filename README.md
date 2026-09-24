@@ -181,6 +181,8 @@ Phase 11 提供 Micrometer 指标（执行总量、耗时、灰度保护动作�
 `DRY_RUN` 会把写入类节点转换成预演字段（例如 `orderWouldBeCreated`），`SHADOW` 会返回主版本和候选
 版本的 executionId、结果及 `matched` 对比值。执行追踪默认保留 30 天，可通过
 `FLOWPILOT_EXECUTION_RETENTION_DAYS` 和 `FLOWPILOT_EXECUTION_RETENTION_BATCH_SIZE` 调整清理策略。
+单实例执行并发由 `FLOWPILOT_EXECUTION_MAX_CONCURRENCY`（默认 256）和
+`FLOWPILOT_EXECUTION_ADMISSION_TIMEOUT_MS` 控制，超出容量的请求会快速返回冲突，避免无限堆积。
 
 ## 关键设计取舍
 

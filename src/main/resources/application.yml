@@ -22,6 +22,8 @@ flowpilot:
   execution:
     retention-days: ${FLOWPILOT_EXECUTION_RETENTION_DAYS:30}
     retention-batch-size: ${FLOWPILOT_EXECUTION_RETENTION_BATCH_SIZE:1000}
+    max-concurrency: ${FLOWPILOT_EXECUTION_MAX_CONCURRENCY:256}
+    admission-timeout-ms: ${FLOWPILOT_EXECUTION_ADMISSION_TIMEOUT_MS:1000}
 
 management:
   endpoints:
