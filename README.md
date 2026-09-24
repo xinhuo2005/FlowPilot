@@ -16,6 +16,7 @@ FlowPilot 是一个基于 Java 21、Spring Boot、LiteFlow 和 MySQL 的动态�
 - 并发保障：自动化测试覆盖并发发布和平滑切换，在途 V1 与新请求 V2 不会串版本。
 - 操作可审计：发布和灰度变更记录操作者、操作类型、状态、请求摘要与完成时间。
 - 写操作幂等：支持 `X-Operation-Id`，重复提交同一操作不会重复触发状态迁移。
+- 变更 Outbox：版本和灰度迁移在同一事务写入可重试事件，处理器通过数据库抢占避免多实例重复消费。
 
 ## 架构
 
@@ -156,6 +157,10 @@ curl http://localhost:8080/api/executions/{executionId}
 
 Phase 9 额外验证操作 ID 重放、请求摘要冲突、失败审计和角色边界。审计数据保存在
 `flow_operation_audit`，可按规则和状态建立运维查询。
+
+Phase 10 的 `rule_change_outbox` 保存规则发布、回滚和灰度变更事件，状态机提交回滚时事件也会回滚。
+`RuleChangeOutboxDispatcher` 以 `PENDING → PROCESSING → PROCESSED` 状态推进，处理失败会增加重试次数
+并延迟再次可见；当前内置处理器负责本地缓存失效，跨实例广播可在该处理器后接入消息系统。
 
 ## 关键设计取舍
 

@@ -4,11 +4,13 @@ import com.flowpilot.domain.gray.model.GrayPolicy;
 import com.flowpilot.domain.gray.model.GrayPolicyStatus;
 import com.flowpilot.domain.gray.repository.GrayPolicyRepository;
 import com.flowpilot.domain.rule.model.RuleDefinition;
+import com.flowpilot.domain.rule.model.RuleChangeEvent;
 import com.flowpilot.domain.rule.model.RuleStatus;
 import com.flowpilot.domain.rule.model.RuleVersion;
 import com.flowpilot.domain.rule.model.RuleVersionStatus;
 import com.flowpilot.domain.rule.repository.RuleDefinitionRepository;
 import com.flowpilot.domain.rule.repository.RuleVersionRepository;
+import com.flowpilot.domain.rule.repository.RuleChangeOutboxRepository;
 import com.flowpilot.exception.IllegalRuleStateException;
 import com.flowpilot.exception.RuleNotFoundException;
 import com.flowpilot.exception.RuleVersionNotFoundException;
@@ -21,15 +23,18 @@ public class GrayStateTransitionService {
     private final RuleDefinitionRepository definitionRepository;
     private final RuleVersionRepository versionRepository;
     private final GrayPolicyRepository grayPolicyRepository;
+    private final RuleChangeOutboxRepository outboxRepository;
 
     public GrayStateTransitionService(
             RuleDefinitionRepository definitionRepository,
             RuleVersionRepository versionRepository,
-            GrayPolicyRepository grayPolicyRepository
+            GrayPolicyRepository grayPolicyRepository,
+            RuleChangeOutboxRepository outboxRepository
     ) {
         this.definitionRepository = definitionRepository;
         this.versionRepository = versionRepository;
         this.grayPolicyRepository = grayPolicyRepository;
+        this.outboxRepository = outboxRepository;
     }
 
     @Transactional
@@ -55,6 +60,9 @@ public class GrayStateTransitionService {
         if (!grayPolicyRepository.activate(policy)) {
             throw new IllegalRuleStateException("Concurrent gray activation detected: " + ruleCode);
         }
+        outboxRepository.append(RuleChangeEvent.of(
+                ruleCode, definition.id(), "GRAY_STARTED", grayVersion,
+                "baseVersion=" + definition.currentVersion() + ",percentage=" + percentage));
     }
 
     @Transactional
@@ -65,6 +73,9 @@ public class GrayStateTransitionService {
                 definition.id(), policy.percentage(), percentage)) {
             throw new IllegalRuleStateException("Concurrent gray percentage change detected: " + ruleCode);
         }
+        outboxRepository.append(RuleChangeEvent.of(
+                ruleCode, definition.id(), "GRAY_PERCENTAGE_UPDATED", policy.grayVersion(),
+                "percentage=" + percentage));
     }
 
     @Transactional
@@ -76,6 +87,9 @@ public class GrayStateTransitionService {
         changeStatus(definition.id(), policy.grayVersion(),
                 RuleVersionStatus.PUBLISHED, RuleVersionStatus.ARCHIVED);
         disablePolicy(definition, policy);
+        outboxRepository.append(RuleChangeEvent.of(
+                ruleCode, definition.id(), "GRAY_STOPPED", policy.grayVersion(),
+                "baseVersion=" + policy.baseVersion()));
     }
 
     @Transactional
@@ -95,6 +109,9 @@ public class GrayStateTransitionService {
         changeStatus(definition.id(), policy.baseVersion(),
                 RuleVersionStatus.PUBLISHED, RuleVersionStatus.ARCHIVED);
         disablePolicy(definition, policy);
+        outboxRepository.append(RuleChangeEvent.of(
+                ruleCode, definition.id(), "GRAY_PROMOTED", policy.grayVersion(),
+                "currentVersion=" + policy.grayVersion()));
     }
 
     private RuleDefinition lockExecutableRule(String ruleCode) {

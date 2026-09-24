@@ -2,11 +2,13 @@ package com.flowpilot.domain.rule.service;
 
 import com.flowpilot.domain.gray.repository.GrayPolicyRepository;
 import com.flowpilot.domain.rule.model.RuleDefinition;
+import com.flowpilot.domain.rule.model.RuleChangeEvent;
 import com.flowpilot.domain.rule.model.RuleStatus;
 import com.flowpilot.domain.rule.model.RuleVersion;
 import com.flowpilot.domain.rule.model.RuleVersionStatus;
 import com.flowpilot.domain.rule.repository.RuleDefinitionRepository;
 import com.flowpilot.domain.rule.repository.RuleVersionRepository;
+import com.flowpilot.domain.rule.repository.RuleChangeOutboxRepository;
 import com.flowpilot.exception.IllegalRuleStateException;
 import com.flowpilot.exception.RuleNotFoundException;
 import com.flowpilot.exception.RuleVersionNotFoundException;
@@ -19,15 +21,18 @@ public class RuleStateTransitionService {
     private final RuleDefinitionRepository definitionRepository;
     private final RuleVersionRepository versionRepository;
     private final GrayPolicyRepository grayPolicyRepository;
+    private final RuleChangeOutboxRepository outboxRepository;
 
     public RuleStateTransitionService(
             RuleDefinitionRepository definitionRepository,
             RuleVersionRepository versionRepository,
-            GrayPolicyRepository grayPolicyRepository
+            GrayPolicyRepository grayPolicyRepository,
+            RuleChangeOutboxRepository outboxRepository
     ) {
         this.definitionRepository = definitionRepository;
         this.versionRepository = versionRepository;
         this.grayPolicyRepository = grayPolicyRepository;
+        this.outboxRepository = outboxRepository;
     }
 
     @Transactional
@@ -45,6 +50,9 @@ public class RuleStateTransitionService {
                     RuleVersionStatus.PUBLISHED, RuleVersionStatus.ARCHIVED);
         }
         changeCurrentVersion(definition, version);
+        outboxRepository.append(RuleChangeEvent.of(
+                ruleCode, definition.id(), "RULE_PUBLISHED", version,
+                "currentVersion=" + version));
     }
 
     @Transactional
@@ -68,6 +76,9 @@ public class RuleStateTransitionService {
         changeStatus(definition.id(), current.version(),
                 RuleVersionStatus.PUBLISHED, RuleVersionStatus.ARCHIVED);
         changeCurrentVersion(definition, targetVersion);
+        outboxRepository.append(RuleChangeEvent.of(
+                ruleCode, definition.id(), "RULE_ROLLED_BACK", targetVersion,
+                "currentVersion=" + targetVersion));
     }
 
     private RuleDefinition lockRule(String ruleCode) {
